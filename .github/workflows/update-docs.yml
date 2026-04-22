@@ -60,7 +60,16 @@ jobs:
         id: check_changes
         working-directory: docs-repo
         run: |
-          git diff --quiet && git diff --cached --quiet && echo "has_changes=false" >> $GITHUB_OUTPUT || echo "has_changes=true" >> $GITHUB_OUTPUT
+          # Stage everything so we can detect untracked files too (first run will have all new files)
+          git add -A
+          if git diff --cached --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No documentation changes detected"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Documentation changes detected:"
+            git diff --cached --stat
+          fi
 
       - name: Create branch and open PR
         if: steps.check_docs.outputs.has_docs == 'true' && steps.check_changes.outputs.has_changes == 'true'
